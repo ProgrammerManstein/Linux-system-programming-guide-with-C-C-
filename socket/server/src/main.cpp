@@ -12,7 +12,10 @@
 using namespace std;
 
 void catch_child(int signum){
-    while(waitpid(0,nullptr,WNOHANG)>0);
+    pid_t p;
+    while((p=waitpid(0,nullptr,WNOHANG))>0){
+        cout<<"catch child: "<<p<<endl;
+    }
     return;
 }
 
@@ -34,6 +37,13 @@ int main(int argc,char** argv){
     struct sockaddr_in cliaddr;
     socklen_t len=sizeof(cliaddr);
     socklen_t IP_len;
+    
+    sigset_t set;
+    sigset_t newset;
+    sigemptyset(&set);
+    sigaddset(&set,SIGCHLD);
+    sigprocmask(SIG_BLOCK,&set,&newset);
+
     while(1){       
         cfd=accept(lfd,(struct sockaddr*) &cliaddr,&len);
         if(cfd==-1){
@@ -49,6 +59,7 @@ int main(int argc,char** argv){
             act.sa_handler=catch_child;
             sigemptyset(&act.sa_mask);
             act.sa_flags=0;
+            sigprocmask(SIG_UNBLOCK,&set,nullptr);
             int sigret=sigaction(SIGCHLD,&act,nullptr);
             if(sigret==-1){
                 perror("sigaction error");
