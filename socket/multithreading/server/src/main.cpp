@@ -24,7 +24,8 @@ struct client_data
 void* write_client(void* data)
 {
     // Transfer ownership to unique_ptr for automatic cleanup
-    std::unique_ptr<client_data> d(static_cast<client_data*>(data));
+    //std::unique_ptr<client_data> d(static_castc);
+    client_data *d=(client_data*) data;
     pthread_detach(pthread_self());
     
     char buf[BUFSIZ];
