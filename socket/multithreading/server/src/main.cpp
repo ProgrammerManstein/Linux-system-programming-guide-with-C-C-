@@ -17,22 +17,34 @@ struct client_data
 {
     int cfd;
     sockaddr_in cliaddr;
+    client_data(int fd,sockaddr_in addr){
+        cfd=fd;
+        cliaddr=addr;
+    }
 };
 
 
 void* write_client(void *data){
-    char buf[4096];
+    
     client_data *d=(client_data*) data;
-    int ret=read(d->cfd,buf,4096);
-    if (ret == 0) {
-        cout<<"the other side has been closed.\n";
-        //break;
+    pthread_detach(pthread_self());
+    char buf[BUFSIZ];
+    while (1)
+    {        
+        memset(buf, 0, sizeof(buf));
+        int ret=read(d->cfd,buf,sizeof(buf));
+        if (ret == 0) {
+            cout<<"the other side has been closed.\n";
+            break;
+        }
+        for(int i=0;i<ret;i++){
+            buf[i]=toupper(buf[i]);
+        }
+        write(d->cfd,buf,ret);
+        
     }
-    for(int i=0;i<ret;i++){
-        buf[i]=toupper(buf[i]);
-    }
-    write(d->cfd,buf,ret);
     close(d->cfd);
+    delete data;
 }
 
 int main(int argc, char **argv){
@@ -51,11 +63,9 @@ int main(int argc, char **argv){
     while (1)
     {
         int cfd=accept(lfd,(sockaddr*)&cliaddr,&socklen);
-        client_data data;
-        data.cfd=cfd;
-        data.cliaddr=cliaddr;
+        client_data *data=new client_data(cfd,cliaddr);
         
-        pthread_create(&thread,nullptr,write_client,(void*)&data);
+        pthread_create(&thread,nullptr,write_client,(void*)data);
     }
     close(lfd);
 }
